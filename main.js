@@ -62,6 +62,10 @@ var TILESET_SPACING = 2;
 var TILESET_COUNT_X = 14;
 var TILESET_COUNT_Y = 14;
 
+var score = 0;
+var lives = 3;
+
+
 // abitrary choice for 1m
 var METER = TILE;
  // very exaggerated gravity (6x)
@@ -200,6 +204,18 @@ function run()
 	context.fillStyle = "#0000FF";
 	context.font="14px Arial";
 	context.fillText("FPS: " + fps, 5, 20, 100);
+
+	// score
+	context.fillStyle = "red";
+	context.font="32px Arial";
+	var scoreText = "Score: " + score;
+	context.fillText(scoreText, SCREEN_WIDTH - 170, 35);
+
+	// life counter
+	//for(var i=0; i<lives; i++)
+	//{
+	 //context.drawImage(heartImage, 20 + ((heartImage.width+2)*i), 10);
+	//}
 }
 
 initialize();
