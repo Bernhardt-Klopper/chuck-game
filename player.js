@@ -64,9 +64,12 @@ var Player = function()
 	this.jumping = false;
 	
 	this.direction = LEFT;
+
+	this.cooldownTimer = 0;
 	
 
 };
+
 
 Player.prototype.update = function(deltaTime)
 {
@@ -76,6 +79,8 @@ this.sprite.update(deltaTime);
 	var left = false;
  	var right = false;
  	var jump = false;
+
+ 	var PLAYER_SPEED = 300;
  
  // check keypress events
 	 	if(keyboard.isKeyDown(keyboard.KEY_LEFT) == true) {
@@ -83,6 +88,7 @@ this.sprite.update(deltaTime);
                 this.direction = LEFT;
                 if(this.sprite.currentAnimation != ANIM_WALK_LEFT)
                         this.sprite.setAnimation(ANIM_WALK_LEFT);
+                    this.x -= PLAYER_SPEED * deltaTime;
         }
        
         else if(keyboard.isKeyDown(keyboard.KEY_RIGHT) == true) {
@@ -90,6 +96,7 @@ this.sprite.update(deltaTime);
         this.direction = RIGHT;
         if(this.sprite.currentAnimation != ANIM_WALK_RIGHT)
                 this.sprite.setAnimation(ANIM_WALK_RIGHT);
+            this.x += PLAYER_SPEED * deltaTime;
         }
        
         else {
@@ -110,6 +117,17 @@ this.sprite.update(deltaTime);
        
         if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true) {
                 jump = true;
+        }
+
+        if(this.cooldownTimer > 0)
+        {
+                this.cooldownTimer -= deltaTime;
+        }
+        if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0) 
+        {
+                sfxFire.play();
+                this.cooldownTimer = 0.3;
+                // Shoot a bullet
         }
  
         var wasleft = this.velocity.x < 0;
@@ -156,7 +174,7 @@ this.sprite.update(deltaTime);
 	// collision detection
 	// Our collision detection logic is greatly simplified by the fact that the
 	// player is a rectangle and is exactly the same size as a single tile.
-	 // So we know that the player can only ever occupy 1, 2 or 4 cells.
+	// So we know that the player can only ever occupy 1, 2 or 4 cells.
 
 	// This means we can short-circuit and avoid building a general purpose
 	// collision detection engine by simply looking at the 1 to 4 cells that
@@ -225,10 +243,12 @@ this.sprite.update(deltaTime);
 
 Player.prototype.draw = function()
 {
-	context.save();
-	this.sprite.draw(context, this.position.x, this.position.y);
+	//context.save();
+	this.sprite.draw(context, this.position.x - worldOffsetX, this.position.y);
+	//this.sprite.draw(context, this.position.x, this.position.y);
+	
 		
-	context.restore();
+	//context.restore();
 }
 
 

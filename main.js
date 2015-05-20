@@ -47,6 +47,11 @@ var fpsTime = 0;
 var player = new Player();
 var keyboard = new Keyboard();
 
+var ENEMY_MAXDX = METER * 5;
+var ENEMY_ACCEL = ENEMY_MAXDX * 2;
+
+var enemies = [];
+
 var TILE = 35;
 var LAYER_COUNT = 3;
 
@@ -54,7 +59,10 @@ var LAYER_BACKGOUND = 0;
 var LAYER_PLATFORMS = 1;
 var LAYER_LADDERS = 2;
 
-var MAP = { tw: 20, th: 15 };
+var LAYER_OBJECT_ENEMIES = 3;
+var LAYER_OBJECT_TRIGGERS = 4;
+
+var MAP = { tw: 100, th: 15 };
 
 var TILESET_TILE = TILE * 2;
 var TILESET_PADDING = 2
@@ -85,66 +93,7 @@ var JUMP = METER * 1500;
 var tileset = document.createElement("img");
 tileset.src = "tileset.png";
 
-function cellAtPixelCoord(layer, x,y)
-{
-	if(x<0 || x>SCREEN_WIDTH || y<0)
-	return 1;
-	// let the player drop of the bottom of the screen (this means death)
-	if(y>SCREEN_HEIGHT)
-	return 0;
-	return cellAtTileCoord(layer, p2t(x), p2t(y));
-};
-function cellAtTileCoord(layer, tx, ty)
-{
-	if(tx<0 || tx>=MAP.tw || ty<0)
-	return 1;
-	// let the player drop of the bottom of the screen (this means death)
-	if(ty>=MAP.th)
-	return 0;
-	return cells[layer][ty][tx];
-};
-function tileToPixel(tile)
-{
-	return tile * TILE;
-};
-function pixelToTile(pixel)
-{
-	return Math.floor(pixel/TILE);
-};
-function bound(value, min, max)
-{
-	if(value < min)
-	return min;
-	if(value > max)
-	return max;
-	return value;
-}
 
-function drawMap ()
-{
-	 for(var layerIdx=0; layerIdx<LAYER_COUNT; layerIdx++)
-	{
-		 var idx = 0;
-		 for( var y = 0; y < level1.layers[layerIdx].height; y++ )
-		{
-			 for( var x = 0; x < level1.layers[layerIdx].width; x++ )
-			{
-				 if( level1.layers[layerIdx].data[idx] != 0 )
-				 	{
-					 // the tiles in the Tiled map are base 1 (meaning a value of 0 means no tile), so subtract one from the tileset id to get the
-					 // correct tile
-					 var tileIndex = level1.layers[layerIdx].data[idx] - 1;
-					 var sx = TILESET_PADDING + (tileIndex % TILESET_COUNT_X) * (TILESET_TILE + TILESET_SPACING);
-					 var sy = TILESET_PADDING + (Math.floor(tileIndex / TILESET_COUNT_Y)) * (TILESET_TILE + TILESET_SPACING);
-					 context.drawImage(tileset, sx, sy, TILESET_TILE, TILESET_TILE, x*TILE, (y-1)*TILE, TILESET_TILE, TILESET_TILE);
-				 	}
-				idx++;
-			}
-		}
-	}
-}
-
-var cells = []; // the array that holds our simplified collision data
 
 function initialize() 
 {
@@ -176,7 +125,170 @@ function initialize()
 			}
 		}
 	}
+
+	musicBackground = new Howl(
+        {
+                urls: ["background.ogg"],
+                loop: true,
+                buffer: true,
+                volume: 0.5
+        } );
+        musicBackground.play();
+       
+        sfxFire = new Howl(
+        {
+                urls: ["fireEffect.ogg"],
+                buffer: true,
+                volume: 1,
+                onend: function() {
+                        isSfxPlaying = false;
+                }
+        } );
+// add enemies
+	idx = 0;
+	for(var y = 0; y < level1.layers[LAYER_OBJECT_ENEMIES].height; y++) 
+	{
+		for(var x = 0; x < level1.layers[LAYER_OBJECT_ENEMIES].width; x++) 
+		{	
+			if(level1.layers[LAYER_OBJECT_ENEMIES].data[idx] != 0) 
+			{
+				var px = tileToPixel(x);
+				var py = tileToPixel(y);
+				var e = new Enemy(px, py);
+				enemies.push(e);
+			}
+			idx++;
+		}
+	} 
+
 }
+
+function cellAtPixelCoord(layer, x,y)
+{
+	if(x<0 || x>SCREEN_WIDTH || y<0)
+	return 1;
+	// let the player drop of the bottom of the screen (this means death)
+	if(y>SCREEN_HEIGHT)
+	return 0;
+	return cellAtTileCoord(layer, p2t(x), p2t(y));
+};
+
+function cellAtTileCoord(layer, tx, ty)
+{
+	if(tx<0 || tx>=MAP.tw || ty<0)
+	return 1;
+	// let the player drop of the bottom of the screen (this means death)
+	if(ty>=MAP.th)
+	return 0;
+	return cells[layer][ty][tx];
+};
+
+function tileToPixel(tile)
+{
+	return tile * TILE;
+};
+
+function pixelToTile(pixel)
+{
+	return Math.floor(pixel/TILE);
+};
+
+function bound(value, min, max)
+{
+	if(value < min)
+	return min;
+	if(value > max)
+	return max;
+	return value;
+}
+
+var worldOffsetX =0;
+
+function drawMap()
+{
+	 var startX = -1;
+	 var maxTiles = Math.floor(SCREEN_WIDTH / TILE) + 2;
+	 var tileX = pixelToTile(player.position.x);
+	 var offsetX = TILE + Math.floor(player.position.x%TILE);
+
+	 startX = tileX - Math.floor(maxTiles / 2);
+
+	 if(startX < -1)
+	 {
+		 startX = 0;
+		 offsetX = 0;
+	 }
+	 
+	 if(startX > MAP.tw - maxTiles)
+	 {
+		 startX = MAP.tw - maxTiles + 1;
+		 offsetX = TILE;
+	 }
+	 
+	 worldOffsetX = startX * TILE + offsetX;
+
+	 for( var layerIdx=0; layerIdx < LAYER_COUNT; layerIdx++ )
+	 {
+	 	for( var y = 0; y < level1.layers[layerIdx].height; y++ )
+	 	{
+	 		var idx = y * level1.layers[layerIdx].width + startX;
+	 		for( var x = startX; x < startX + maxTiles; x++ )
+	 		{
+	 			if( level1.layers[layerIdx].data[idx] != 0 )
+				 	{
+						 // the tiles in the Tiled map are base 1 (meaning a value of 0 means no tile),
+						 // so subtract one from the tileset id to get the correct tile
+						 var tileIndex = level1.layers[layerIdx].data[idx] - 1;
+						 
+						 var sx = TILESET_PADDING + (tileIndex % TILESET_COUNT_X) *
+						(TILESET_TILE + TILESET_SPACING);
+						 
+						 var sy = TILESET_PADDING + (Math.floor(tileIndex / TILESET_COUNT_Y)) *
+						(TILESET_TILE + TILESET_SPACING);
+						 
+						 context.drawImage(tileset, sx, sy, TILESET_TILE, TILESET_TILE,
+						(x-startX)*TILE - offsetX, (y-1)*TILE, TILESET_TILE, TILESET_TILE);
+				 	}
+			 idx++;
+	 		}
+	 	}
+	}
+}
+
+var cells = []; // the array that holds our simplified collision data
+
+var Bullet = function(x, y, moveRight)
+{
+	this.sprite = new Sprite("bullet.png");
+	this.sprite.buildAnimation(1, 1, 32, 32, -1, [0]);
+	this.sprite.setAnimationOffset(0, 0, 0);
+	this.sprite.setLoop(0, false);
+	
+	this.position = new Vector2();
+	this.position.set(x, y);
+	
+	this.velocity = new Vector2();
+	this.moveRight = moveRight;
+
+	if(this.moveRight == true)
+	this.velocity.set(MAXDX *2, 0);
+
+	else
+	this.velocity.set(-MAXDX *2, 0);
+}
+
+Bullet.prototype.update = function(dt)
+{
+	this.sprite.update(dt);
+	this.position.x = Math.floor(this.position.x + (dt * this.velocity.x));
+}
+
+Bullet.prototype.draw = function()
+{
+	var screenX = this.position.x - worldOffsetX;
+	this.sprite.draw(context, screenX, this.position.y);
+}
+
 
 function run()
 {
@@ -187,9 +299,14 @@ function run()
 	var deltaTime = getDeltaTime();
 	
 	player.update(deltaTime);
-	player.draw();
-	
 	drawMap();
+	player.draw();
+
+	for(var i=0; i<enemies.length; i++)
+	{
+		enemies[i].update(deltaTime);
+	}
+
 	
 	// update the frame counter
 	fpsTime += deltaTime;
@@ -212,6 +329,8 @@ function run()
 	context.fillText(scoreText, SCREEN_WIDTH - 170, 35);
 
 	// life counter
+	var lifeBar
+	//lifeBar.src = "???.png";
 	//for(var i=0; i<lives; i++)
 	//{
 	 //context.drawImage(heartImage, 20 + ((heartImage.width+2)*i), 10);
