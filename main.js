@@ -46,10 +46,11 @@ var fpsTime = 0;
 
 var player = new Player();
 var keyboard = new Keyboard();
+var position = new Vector2();
+var enemy = new Enemy();
 
 var ENEMY_MAXDX = METER * 5;
 var ENEMY_ACCEL = ENEMY_MAXDX * 2;
-
 var enemies = [];
 
 var TILE = 35;
@@ -73,6 +74,9 @@ var TILESET_COUNT_Y = 14;
 var score = 0;
 var lives = 3;
 
+//var LAYER_OBJECT_TRIGGERS = 5; //CHECK
+//bullet stuff
+var bullets = [];
 
 // abitrary choice for 1m
 var METER = TILE;
@@ -92,76 +96,6 @@ var JUMP = METER * 1500;
 // load the image to use for the level tiles
 var tileset = document.createElement("img");
 tileset.src = "tileset.png";
-
-
-
-function initialize() 
-{
-	for(var layerIdx = 0; layerIdx < LAYER_COUNT; layerIdx++) 
-	{ // initialize the collision map
-		cells[layerIdx] = [];
-		var idx = 0;
-		for(var y = 0; y < level1.layers[layerIdx].height; y++) 
-		{
-			cells[layerIdx][y] = [];
-			for(var x = 0; x < level1.layers[layerIdx].width; x++) 
-		 	{
-				if(level1.layers[layerIdx].data[idx] != 0) 
-			 	{
-					// for each tile we find in the layer data, we need to create 4 collisions
-					// (because our collision squares are 35x35 but the tile in the
-					// level are 70x70)
-					cells[layerIdx][y][x] = 1;
-					cells[layerIdx][y-1][x] = 1;
-					cells[layerIdx][y-1][x+1] = 1;
-					cells[layerIdx][y][x+1] = 1;
-				}
-					 else if(cells[layerIdx][y][x] != 1) 
-				 	{
-						// if we haven't set this cell's value, then set it to 0 now
-						 cells[layerIdx][y][x] = 0;
-					}
-				 idx++;
-			}
-		}
-	}
-
-	musicBackground = new Howl(
-        {
-                urls: ["background.ogg"],
-                loop: true,
-                buffer: true,
-                volume: 0.5
-        } );
-        musicBackground.play();
-       
-        sfxFire = new Howl(
-        {
-                urls: ["fireEffect.ogg"],
-                buffer: true,
-                volume: 1,
-                onend: function() {
-                        isSfxPlaying = false;
-                }
-        } );
-// add enemies
-	idx = 0;
-	for(var y = 0; y < level1.layers[LAYER_OBJECT_ENEMIES].height; y++) 
-	{
-		for(var x = 0; x < level1.layers[LAYER_OBJECT_ENEMIES].width; x++) 
-		{	
-			if(level1.layers[LAYER_OBJECT_ENEMIES].data[idx] != 0) 
-			{
-				var px = tileToPixel(x);
-				var py = tileToPixel(y);
-				var e = new Enemy(px, py);
-				enemies.push(e);
-			}
-			idx++;
-		}
-	} 
-
-}
 
 function cellAtPixelCoord(layer, x,y)
 {
@@ -203,6 +137,21 @@ function bound(value, min, max)
 }
 
 var worldOffsetX =0;
+
+function DrawTileLayer(layer)
+{
+        for( var y = 0; y < level1.layers[layer].height;  y++ )
+        {
+                for( var x = 0; x < level1.layers[layer].width;  x++ )
+                {
+                        if(cells[layer][y][x] == 1)
+                        {
+                                context.fillStyle = "#c0c";            
+                                context.fillRect(35*x, 35*y, 35, 35);                  
+                        }
+                }
+        }
+}
 
 function drawMap()
 {
@@ -257,37 +206,80 @@ function drawMap()
 
 var cells = []; // the array that holds our simplified collision data
 
-var Bullet = function(x, y, moveRight)
+function initialize() 
 {
-	this.sprite = new Sprite("bullet.png");
-	this.sprite.buildAnimation(1, 1, 32, 32, -1, [0]);
-	this.sprite.setAnimationOffset(0, 0, 0);
-	this.sprite.setLoop(0, false);
-	
-	this.position = new Vector2();
-	this.position.set(x, y);
-	
-	this.velocity = new Vector2();
-	this.moveRight = moveRight;
+	for(var layerIdx = 0; layerIdx < LAYER_COUNT; layerIdx++) 
+	{ // initialize the collision map
+		cells[layerIdx] = [];
+		var idx = 0;
+		for(var y = 0; y < level1.layers[layerIdx].height; y++) 
+		{
+			cells[layerIdx][y] = [];
+			for(var x = 0; x < level1.layers[layerIdx].width; x++) 
+		 	{
+				if(level1.layers[layerIdx].data[idx] != 0) 
+			 	{
+					// for each tile we find in the layer data, we need to create 4 collisions
+					// (because our collision squares are 35x35 but the tile in the
+					// level are 70x70)
+					cells[layerIdx][y][x] = 1;
+					cells[layerIdx][y-1][x] = 1;
+					cells[layerIdx][y-1][x+1] = 1;
+					cells[layerIdx][y][x+1] = 1;
+				}
+					 else if(cells[layerIdx][y][x] != 1) 
+				 	{
+						// if we haven't set this cell's value, then set it to 0 now
+						 cells[layerIdx][y][x] = 0;
+					}
+				 idx++;
+			}
+		}
+	}
 
-	if(this.moveRight == true)
-	this.velocity.set(MAXDX *2, 0);
+	musicBackground = new Howl(
+        {
+                urls: ["background.ogg"],
+                loop: true,
+                buffer: true,
+                volume: 0.5
+        } );
+        musicBackground.play();
+       
+        sfxFire = new Howl(
+        {
+                urls: ["fireEffect.ogg"],
+                buffer: true,
+                volume: 1,
+                onend: function() {
+                        isSfxPlaying = false;
+                }
+        } );
 
-	else
-	this.velocity.set(-MAXDX *2, 0);
+// add enemies
+	idx = 0;
+	for(var y = 0; y < level1.layers[LAYER_OBJECT_ENEMIES].height; y++) 
+	{
+		for(var x = 0; x < level1.layers[LAYER_OBJECT_ENEMIES].width; x++) 
+		{	
+			if(level1.layers[LAYER_OBJECT_ENEMIES].data[idx] != 0) 
+			{
+				var px = tileToPixel(x);
+				var py = tileToPixel(y);
+				var e = new Enemy(px, py);
+				enemies.push(e);
+			}
+			idx++;
+		}
+	} 
+
 }
 
-Bullet.prototype.update = function(dt)
+ for(var i = 0; i < enemies.length; i++)
 {
-	this.sprite.update(dt);
-	this.position.x = Math.floor(this.position.x + (dt * this.velocity.x));
+   enemies[i].draw();
 }
 
-Bullet.prototype.draw = function()
-{
-	var screenX = this.position.x - worldOffsetX;
-	this.sprite.draw(context, screenX, this.position.y);
-}
 
 
 function run()
@@ -306,7 +298,8 @@ function run()
 	{
 		enemies[i].update(deltaTime);
 	}
-
+	
+	
 	
 	// update the frame counter
 	fpsTime += deltaTime;
@@ -329,11 +322,11 @@ function run()
 	context.fillText(scoreText, SCREEN_WIDTH - 170, 35);
 
 	// life counter
-	var lifeBar
-	//lifeBar.src = "???.png";
+	//var lifeBar
+	//lifeBar.src = "pill.png";
 	//for(var i=0; i<lives; i++)
 	//{
-	 //context.drawImage(heartImage, 20 + ((heartImage.width+2)*i), 10);
+	 //context.drawImage(lifeBar, 20 + ((lifeBar.width+2)*i), 10);
 	//}
 }
 

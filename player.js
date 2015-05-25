@@ -12,6 +12,10 @@ var ANIM_WALK_RIGHT = 7;
 var ANIM_SHOOT_RIGHT = 8;
 var ANIM_MAX = 9;
 
+var STATE_CLIMB = 0
+var STATE_RUNJUMP = 1
+var gameState = STATE_CLIMB;
+
 var Player = function()
 {
 
@@ -62,8 +66,10 @@ var Player = function()
 	
 	this.falling = true;
 	this.jumping = false;
+
+	this.isDead = false;
 	
-	this.direction = LEFT;
+	this.direction = RIGHT;
 
 	this.cooldownTimer = 0;
 	
@@ -79,10 +85,13 @@ this.sprite.update(deltaTime);
 	var left = false;
  	var right = false;
  	var jump = false;
+ 	var up = false;
+	var down = false;
 
  	var PLAYER_SPEED = 300;
  
  // check keypress events
+ //LEFT
 	 	if(keyboard.isKeyDown(keyboard.KEY_LEFT) == true) {
                 left = true;
                 this.direction = LEFT;
@@ -90,7 +99,7 @@ this.sprite.update(deltaTime);
                         this.sprite.setAnimation(ANIM_WALK_LEFT);
                     this.x -= PLAYER_SPEED * deltaTime;
         }
-       
+       //RIGHT
         else if(keyboard.isKeyDown(keyboard.KEY_RIGHT) == true) {
         right = true;
         this.direction = RIGHT;
@@ -115,140 +124,224 @@ this.sprite.update(deltaTime);
                 }
         }
        
-        if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true) {
-                jump = true;
-        }
+        //RUNJUMPSTATE
+	//mostly stays the same, but we add some new logic
+	//at the end of the function
+	if(right == false && left == false && this.falling == false)
+	{
+		//player is not moving or falling, but could be
+		//jumping (because we use the up key for both
+		//jumping and climbing)
+		var cell = cellAtTileCoord(LAYER_LADDERS, tx, ty);
+		var cellright = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty);
+		var celldown = cellAtTileCoord(LAYER_LADDERS, tx, ty + 1);
+		var celldiag = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty + 1);
+		//check if we are standing at the bottom of a ladder
+		if(!cell || !cellright)
+		{
+			if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
+			{
+				gameState = STATE_CLIMB;
+				this.sprite.setAnimation(ANIM_CLIMB);
+				return;
+			}
+		}
+		//check if we standing at the top of a ladder
+		if(!celldown || !celldiag)
+		{
+			if(keyboard.isKeyDown(keyboard.KEY_DOWN)== true)
+			{
+				gameState = STATE_RUNJUMP;
+				this.sprite.setAnimation(ANIM_CLIMB);
+				return;
+			}
+		}
+	}
 
-        if(this.cooldownTimer > 0)
-        {
-                this.cooldownTimer -= deltaTime;
-        }
-        if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0) 
-        {
-                sfxFire.play();
-                this.cooldownTimer = 0.3;
-                // Shoot a bullet
-        }
- 
-        var wasleft = this.velocity.x < 0;
-        var wasright = this.velocity.x > 0;
-        var falling = this.falling;
-        var ddx = 0; // acceleration
-        var ddy = GRAVITY;
-       
-        if (left)
-                ddx = ddx - ACCEL; // player wants to go left
-        else if (wasleft)
-                ddx = ddx + FRICTION; // player was going left, but not any more
-       
-        if (right)
-                ddx = ddx + ACCEL;// player wants to go right
-        else if (wasright)
-                ddx = ddx - FRICTION; // player was going right, but not any more
-       
-        if (jump && !this.jumping&& !falling)
-        {
-                ddy = ddy - JUMP; // apply an instantaneous (large) vertical impulse
-                this.jumping = true;
-                if(this.direction == LEFT)
-                        this.sprite.setAnimation(ANIM_JUMP_LEFT)
-                else
-                        this.sprite.setAnimation(ANIM_JUMP_RIGHT)
-        }
+	switch(gameState)
+	{
+		case STATE_RUNJUMP:
+			player.gameStateRunJump(deltaTime, left);
+		break;
+		case STATE_CLIMB:
+			player.gameStateClimb(deltaTime, left);
+		break;
+	}
 
-        
- 	// calculate the new position and velocity:
-	 this.position.y = Math.floor(this.position.y + (deltaTime * this.velocity.y));
-	 this.position.x = Math.floor(this.position.x + (deltaTime * this.velocity.x));
-	 this.velocity.x = bound(this.velocity.x + (deltaTime * ddx), -MAXDX, MAXDX);
-	 this.velocity.y = bound(this.velocity.y + (deltaTime * ddy), -MAXDY, MAXDY);
+	
+	if(this.cooldownTimer > 0)
+	{
+		this.cooldownTimer -= deltaTime;
+	}
+	//SHOOTING
+	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0)
+	{
+		sfxFire.play();
+		this.cooldownTimer = 0.3;
 
-	 if ((wasleft && (this.velocity.x > 0)) ||
- 		(wasright && (this.velocity.x < 0)))
- 	{
-	 // clamp at zero to prevent friction from making us jiggle side to side
-	 this.velocity.x = 0;
- 	}
+		/*this.bullet = new Bullet();
+		bullet.velocity += BULLET_SPEED * deltaTime;
+		/*bullet.push(bullet);
+		var bulletTimer = 0.5
+		if(bulletTimer < 0)
+		{
+			bulletTimer += deltaTime;
+		}
+		for(var i=0; 0<bullets.length; i++)
+		{
+			if(this.direction == RIGHT)
+			{
+				if(this.sprite.currentAnimation != ANIM_SHOOT_RIGHT)
+					this.sprite.setAnimation(ANIM_SHOOT_RIGHT);
+				right = true;
+				bullets.push(Bullet);
+			}
+			else
+			{
+				if(this.sprite.currentAnimation != ANIM_SHOOT_LEFT)
+					this.sprite.setAnimation(ANIM_SHOOT_LEFT);
+				left = true;
+				bullets.push(Bullet);
+			}
+		}*/
+	}
 
-	// we’ll insert code here later
-	// collision detection
-	// Our collision detection logic is greatly simplified by the fact that the
-	// player is a rectangle and is exactly the same size as a single tile.
-	// So we know that the player can only ever occupy 1, 2 or 4 cells.
 
-	// This means we can short-circuit and avoid building a general purpose
-	// collision detection engine by simply looking at the 1 to 4 cells that
-	// the player occupies:
+
+	var wasleft = this.velocity.x < 0;
+	var wasright = this.velocity.x > 0;
+	var falling = this.falling;
+	var ddx = 0;				//acceleration
+	var ddy = GRAVITY;
+
+	if(left)
+		ddx = ddx - ACCEL;		//player wants to go left
+	else if(wasleft)
+		ddx = ddx + FRICTION;	//player was going left, but not anymore
+
+	if(right)
+		ddx = ddx + ACCEL;		//player wants to go right
+	else if(wasright)
+		ddx = ddx - FRICTION;	//player was going left, but not anymore
+
+	if(jump && !this.jumping && !falling)
+	{
+		ddy = ddy - JUMP;		//apply an instantaneous (large) vertical impulse
+		this.jumping = true;
+		if(this.direction == LEFT)
+			this.sprite.setAnimation(ANIM_JUMP_LEFT)
+		else
+			this.sprite.setAnimation(ANIM_JUMP_RIGHT)
+	}
+
+	//calculate the new position and velocity:
+	this.position.y = Math.floor(this.position.y + (deltaTime * this.velocity.y));
+	this.position.x = Math.floor(this.position.x + (deltaTime * this.velocity.x));
+	this.velocity.x = bound(this.velocity.x + (deltaTime * ddx), -MAXDX, MAXDX);
+	this.velocity.y = bound(this.velocity.y + (deltaTime * ddy), -MAXDY, MAXDY);
+
+	if ((wasleft && (this.velocity.x > 0)) ||
+		(wasright && (this.velocity.x < 0)))
+	{
+		//clamp at zero to prevent friction from making us jiggle side to side
+		this.velocity.x = 0;
+	}
+	//collision detection
+	//Our collision detection logic is greatly simplified  by the fact that the
+	//player is a rectangle and is exactly the same size as a single title.
+	//So we know that the player can only ever occupy 1, 2 or 4 cells.
+
+	//This means we can short-circuit and avoid building a general purpose
+	//collision detection engine by simply looking at the 1 to 4 cells that
+	//the player occupies:
 	var tx = pixelToTile(this.position.x);
 	var ty = pixelToTile(this.position.y);
-	var nx = (this.position.x)%TILE; // true if player overlaps right
-	var ny = (this.position.y)%TILE; // true if player overlaps below
+	var nx = (this.position.x)%TILE;
+	var ny = (this.position.y)%TILE;
 	var cell = cellAtTileCoord(LAYER_PLATFORMS, tx, ty);
 	var cellright = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty);
 	var celldown = cellAtTileCoord(LAYER_PLATFORMS, tx, ty + 1);
 	var celldiag = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty + 1);
 
-	// If the player has vertical velocity, then check to see if they have hit a platform
- // below or above, in which case, stop their vertical velocity, and clamp their
- // y position:
- if (this.velocity.y > 0) 
- 	{
-		if ((celldown && !cell) || (celldiag && !cellright && nx)) 
-		{
-			 // clamp the y position to avoid falling into platform below
-			 this.position.y = tileToPixel(ty);
-			 this.velocity.y = 0; // stop downward velocity
-			 this.falling = false; // no longer falling
-			 this.jumping = false; // (or jumping)
-			 ny = 0; // no longer overlaps the cells below
-		}
-
-	}
-
-	else if (this.velocity.y < 0) 
+	//if the player has vertical velocity, then check to see if they have hit
+	//a platform below or above, in which case, stop their vertical velocity, 
+	//and clamp their y positon:
+	if(this.velocity.y > 0)
 	{
-		if ((cell && !celldown) || (cellright && !celldiag && nx)) 
+		if((celldown && !cell) || (celldiag && !cellright && nx))
 		{
-			 // clamp the y position to avoid jumping into platform above
-			 this.position.y = tileToPixel(ty + 1);
-			 this.velocity.y = 0; // stop upward velocity
-			 // player is no longer really in that cell, we clamped them to the cell below
-			 cell = celldown;
-			 cellright = celldiag; // (ditto)
-			 ny = 0; // player no longer overlaps the cells below
+			//clamp the y position to avoid falling into platform below
+			this.position.y = tileToPixel(ty);
+			this.velocity.y = 0				//stop downward velocity
+			this.falling = false;			//no longer falling
+			this.jumping = false;			//(or jumping)
+			ny = 0;							//no longer overlaps the cells below
 		}
 	}
-
-	if (this.velocity.x > 0) 
+	else if (this.velocity.y < 0)
 	{
-	 	if ((cellright && !cell) || (celldiag && !celldown && ny)) 
+		if((cell && !celldown) || (cellright && !celldiag && nx))
 		{
-			 // clamp the x position to avoid moving into the platform we just hit
-			 this.position.x = tileToPixel(tx);
-			 this.velocity.x = 0; // stop horizontal velocity
+			//clamp the y position to avoid jumping into platform above
+			this.position.y = tileToPixel(ty + 1);
+			this.velocity.y = 0;				//stop unward velocity
+			//player is no longer really in that cell, we clamoed them to the cell below
+			cell = celldown;
+			cellright = celldiag;			//(ditto)
+			ny = 0;							//player no longr overlaps the cells below
 		}
-	}
-
-	else if (this.velocity.x < 0) 
+		if(this.velocity.x > 0)
 		{
-	 		if ((cell && !cellright) || (celldown && !celldiag && ny)) 
+			if((cellright && !cell) || (celldiag && !celldown && ny))
 			{
-				// clamp the x position to avoid moving into the platform we just hit
-				this.position.x = tileToPixel(tx + 1);
-				this.velocity.x = 0; // stop horizontal velocity
+				//clamp the x position to avoid moving into the platform we just hit
+				this.position.x = tileToPixel(tx);
+				this.velocity.x = 0; 		//stop horizontal velocity
 			}
 		}
+		else if (this.velocity.x < 0)
+		{
+			if((cell && !cellright) || (celldown && !celldiag && ny))
+			{
+				//clamp the x position to avoid moving into the platform we just hit
+				this.position.x = tileToPixel(tx + 1);
+				this.velocity.x = 0;		//stop horizontal velocity
+			}
+		}
+	}
+}	
 
+Player.prototype.gameStateRunJump = function(deltaTime, left)
+{
+	if(this.falling == false)
+	{
+		if(keyboard.isKeyDown(keyboard.KEY_UP) == true)
+		{
+			jump = true;
+		}
+	}
+}
+
+Player.prototype.gameStateClimb = function(deltaTime, left)
+{
+	/*if(this.falling == false && this.jumping == false && left == false && right == false)
+	{
+		if(keyboard.isKeyDown(keyboard.KEY_UP) == true)
+		{
+			up = true;
+			if(this.sprite.currentAnimation != ANIM_CLIMB)
+				this.sprite.setAnimation(ANIM_CLIMB);
+			{
+				this.velocity.y = 0;
+			}
+		}
+	}*/
 }
 
 Player.prototype.draw = function()
 {
-	//context.save();
+	//context.drawImage(this.image, this.position.x - worldOffsetX, this.position.y);
 	this.sprite.draw(context, this.position.x - worldOffsetX, this.position.y);
-	//this.sprite.draw(context, this.position.x, this.position.y);
-	
-		
-	//context.restore();
 }
 
 
