@@ -12,6 +12,9 @@ var ANIM_WALK_RIGHT = 7;
 var ANIM_SHOOT_RIGHT = 8;
 var ANIM_MAX = 9;
 
+var PLAYER_SPEED = 300;
+
+//Game state for spacebar
 var STATE_CLIMB = 0
 var STATE_RUNJUMP = 1
 var gameState = STATE_CLIMB;
@@ -56,7 +59,7 @@ var Player = function()
 	
 	
 	this.position = new Vector2(10);
-	this.position.set( 9*35, 0 );
+	this.position.set( 1*35, 7*35 );
 
 	this.width = 159;
 	this.height = 163;
@@ -88,7 +91,6 @@ this.sprite.update(deltaTime);
  	var up = false;
 	var down = false;
 
- 	var PLAYER_SPEED = 300;
  
  // check keypress events
  //LEFT
@@ -123,70 +125,33 @@ this.sprite.update(deltaTime);
                         }
                 }
         }
-       
-        //RUNJUMPSTATE
-	//mostly stays the same, but we add some new logic
-	//at the end of the function
-	if(right == false && left == false && this.falling == false)
-	{
-		//player is not moving or falling, but could be
-		//jumping (because we use the up key for both
-		//jumping and climbing)
-		var cell = cellAtTileCoord(LAYER_LADDERS, tx, ty);
-		var cellright = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty);
-		var celldown = cellAtTileCoord(LAYER_LADDERS, tx, ty + 1);
-		var celldiag = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty + 1);
-		//check if we are standing at the bottom of a ladder
-		if(!cell || !cellright)
+        if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
 		{
-			if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
-			{
-				gameState = STATE_CLIMB;
-				this.sprite.setAnimation(ANIM_CLIMB);
-				return;
-			}
+			jump = true;
 		}
-		//check if we standing at the top of a ladder
-		if(!celldown || !celldiag)
-		{
-			if(keyboard.isKeyDown(keyboard.KEY_DOWN)== true)
-			{
-				gameState = STATE_RUNJUMP;
-				this.sprite.setAnimation(ANIM_CLIMB);
-				return;
-			}
-		}
-	}
 
-	switch(gameState)
-	{
-		case STATE_RUNJUMP:
-			player.gameStateRunJump(deltaTime, left);
-		break;
-		case STATE_CLIMB:
-			player.gameStateClimb(deltaTime, left);
-		break;
-	}
-
-	
 	if(this.cooldownTimer > 0)
 	{
 		this.cooldownTimer -= deltaTime;
 	}
+
+	cooldownTimer = 0.5;
+	var bulletTimer = 0;
 	//SHOOTING
 	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0)
 	{
 		sfxFire.play();
 		this.cooldownTimer = 0.3;
 
-		/*this.bullet = new Bullet();
-		bullet.velocity += BULLET_SPEED * deltaTime;
-		/*bullet.push(bullet);
-		var bulletTimer = 0.5
-		if(bulletTimer < 0)
+		this.bullet = new Bullet(this.position.x, this.position.y, this.wasRight);
+		var BULLET_SPEED = 450;
+		Bullet.velocity += BULLET_SPEED * deltaTime;
+		bullets.push();
+		if(cooldownTimer < 0)
 		{
-			bulletTimer += deltaTime;
+			bulletTimer -= deltaTime;
 		}
+
 		for(var i=0; 0<bullets.length; i++)
 		{
 			if(this.direction == RIGHT)
@@ -203,9 +168,8 @@ this.sprite.update(deltaTime);
 				left = true;
 				bullets.push(Bullet);
 			}
-		}*/
+		}
 	}
-
 
 
 	var wasleft = this.velocity.x < 0;
@@ -262,7 +226,7 @@ this.sprite.update(deltaTime);
 	var cellright = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty);
 	var celldown = cellAtTileCoord(LAYER_PLATFORMS, tx, ty + 1);
 	var celldiag = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty + 1);
-
+	
 	//if the player has vertical velocity, then check to see if they have hit
 	//a platform below or above, in which case, stop their vertical velocity, 
 	//and clamp their y positon:
@@ -309,7 +273,54 @@ this.sprite.update(deltaTime);
 			}
 		}
 	}
-}	
+	
+      
+    //RUNJUMPSTATE
+	//mostly stays the same, but we add some new logic
+	//at the end of the function
+	if(right == false && left == false && this.falling == false)
+	{
+		//player is not moving or falling, but could be
+		//jumping (because we use the up key for both
+		//jumping and climbing)
+		var cell = cellAtTileCoord(LAYER_LADDERS, tx, ty);
+		var cellright = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty);
+		var celldown = cellAtTileCoord(LAYER_LADDERS, tx, ty + 1);
+		var celldiag = cellAtTileCoord(LAYER_LADDERS, tx + 1, ty + 1);
+		//check if we are standing at the bottom of a ladder
+		if(!cell || !cellright)
+		{
+			if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
+			{
+				gameState = STATE_CLIMB;
+				this.sprite.setAnimation(ANIM_CLIMB);
+				return;
+			}
+		}
+		//check if we standing at the top of a ladder
+		if(!celldown || !celldiag)
+		{
+			if(keyboard.isKeyDown(keyboard.KEY_DOWN)== true)
+			{
+				gameState = STATE_RUNJUMP;
+				this.sprite.setAnimation(ANIM_CLIMB);
+				return;
+			}
+		}
+	}
+
+	switch(gameState)
+	{
+		case STATE_RUNJUMP:
+			player.gameStateRunJump(deltaTime, left);
+		break;
+		case STATE_CLIMB:
+			player.gameStateClimb(deltaTime, left);
+		break;
+	}
+}
+	
+		
 
 Player.prototype.gameStateRunJump = function(deltaTime, left)
 {
