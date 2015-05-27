@@ -327,7 +327,7 @@ function run()
 			hit = true;
 		}
 		//also check if the bullet hit an enemy
-		for(var j=0; j<enemies.length; j++)
+		/*for(var j=0; j<enemies.length; j++)
 		{
 			if(intersects(bullets[i].position.x, bullets[i].position.y, TILE, TILE,
 				enemies[j].position.x, enemies[j].position.y, TILE, TILE)== true)
@@ -344,7 +344,7 @@ function run()
 		{
 			bullets.splice(i, 1);
 			break;
-		}
+		}*/
 	}
 
 	//set the score

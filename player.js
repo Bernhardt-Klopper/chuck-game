@@ -139,37 +139,36 @@ this.sprite.update(deltaTime);
 	var bulletTimer = 0;
 	//SHOOTING
 	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0)
-	{
-		sfxFire.play();
-		this.cooldownTimer = 0.3;
-
-		this.bullet = new Bullet(this.position.x, this.position.y, this.wasRight);
-		var BULLET_SPEED = 450;
-		Bullet.velocity += BULLET_SPEED * deltaTime;
-		bullets.push();
-		if(cooldownTimer < 0)
-		{
-			bulletTimer -= deltaTime;
-		}
-
-		for(var i=0; 0<bullets.length; i++)
-		{
-			if(this.direction == RIGHT)
-			{
-				if(this.sprite.currentAnimation != ANIM_SHOOT_RIGHT)
-					this.sprite.setAnimation(ANIM_SHOOT_RIGHT);
-				right = true;
-				bullets.push(Bullet);
-			}
-			else
-			{
-				if(this.sprite.currentAnimation != ANIM_SHOOT_LEFT)
-					this.sprite.setAnimation(ANIM_SHOOT_LEFT);
-				left = true;
-				bullets.push(Bullet);
-			}
-		}
-	}
+                {
+                        sfxFire.play();
+                        this.cooldownTimer = 0.3;
+ 
+                                if(this.direction == LEFT)
+                                {
+                                        if(this.sprite.currentAnimation != ANIM_SHOOT_LEFT)
+                                        this.sprite.setAnimation(ANIM_SHOOT_LEFT);
+                                }
+                                else
+                                {
+                                        if(this.sprite.currentAnimation != ANIM_SHOOT_RIGHT)
+                                        this.sprite.setAnimation(ANIM_SHOOT_RIGHT);
+                                }
+                       
+                        //shoot a bullet
+                        var tempBullet =  new Bullet(this.position.x, this.position.y);
+                        this.moveRight = right;
+                if(this.right == true)
+                        {
+                                this.velocity.set(MAXDX *2, 0);
+                        }
+                        else
+                        {
+                                this.velocity.set(MAXDX *0, 0);
+                        }
+                this.cooldownTimer = 0.5;
+                bullets.push(tempBullet);
+ 
+                }
 
 
 	var wasleft = this.velocity.x < 0;
