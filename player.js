@@ -14,6 +14,8 @@ var ANIM_MAX = 9;
 
 var PLAYER_SPEED = 300;
 
+var bullets = [];
+
 //Game state for spacebar
 var STATE_CLIMB = 0
 var STATE_RUNJUMP = 1
@@ -137,6 +139,7 @@ this.sprite.update(deltaTime);
 
 	cooldownTimer = 0.5;
 	var bulletTimer = 0;
+	
 	//SHOOTING
 	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0)
                 {
@@ -159,7 +162,7 @@ this.sprite.update(deltaTime);
                         this.moveRight = right;
                 if(this.right == true)
                         {
-                                this.velocity.set(MAXDX *2, 0);
+                                this.velocity.set(-MAXDX *2, 0);
                         }
                         else
                         {
@@ -273,6 +276,22 @@ this.sprite.update(deltaTime);
 		}
 	}
 	
+	//stop player leaving screen left & right
+	//player go right - this doesnt work
+	if((this.position.x - worldOffsetX) > (SCREEN_WIDTH - this.position.width) + 45) /*+45 b.cause ship wasn't hitting edge of screen - stopped early*/
+	{
+		this.position.x = (SCREEN_WIDTH - this.width) /*+ 45*/;
+	}
+	//player to go left - only this one works
+	if(this.position.x < 40)
+	{
+		this.position.x = 40;
+	}
+
+	if(cellAtTileCoord(LAYER_OBJECT_TRIGGERS, tx, ty)== true)
+	{
+		gameState = STATE_GAMEWIN;
+	}
       
     //RUNJUMPSTATE
 	//mostly stays the same, but we add some new logic

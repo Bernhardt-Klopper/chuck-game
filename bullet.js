@@ -15,11 +15,13 @@ var Bullet = function(x, y, moveRight)
 	
 
 	this.moveRight = moveRight;
+	this.moveLeft = true;
 	if(this.moveRight == true)
 		this.velocity.set(-MAXDX * 2, 0);
-	else if
-		(this.moveLeft == true)
-		this.velocity.set(MAXDX * 2, 0);
+	else
+	this.velocity.set(MAXDX * 2, 0);
+	
+	
 }
 
 
