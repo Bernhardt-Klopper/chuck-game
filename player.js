@@ -16,118 +16,114 @@ var PLAYER_SPEED = 300;
 
 var bullets = [];
 
-//Game state for spacebar
+//var moveRight = true;
+
+//game states for space bar
 var STATE_CLIMB = 0
 var STATE_RUNJUMP = 1
 var gameState = STATE_CLIMB;
 
 var Player = function()
 {
-
 	this.sprite = new Sprite("ChuckNorris.png");
-		//idling left
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [0, 1, 2, 3, 4, 5, 6, 7]);
-        // jump left
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [8, 9, 10, 11, 12]);
-        //walk left
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]);
-        //shoot left
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]);
-        //climb
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);
-        //idle right
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [52, 53, 54, 55, 56, 57, 58, 59]);
-        //jump right
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [60, 61, 62, 63, 64]);
-        //walk right
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78]);
-        //shoot right
-        this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
-                [79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92]);
-	
+
+	// idle left
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[0, 1 ,2, 3, 4, 5, 6, 7]);
+	//jump left
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[8, 9, 10, 11, 12]);
+	//walk left
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]);
+	//shoot left
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+        [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]);
+	//climb
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+        [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);
+	//idle right
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[52, 53, 54, 55, 56, 57, 58, 59]);
+	//jump right
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[60, 61, 62, 63, 64,]);
+	//walk right
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+		[65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78]);
+	//shoot right
+	 this.sprite.buildAnimation(12, 8, 165, 126, 0.05,
+        [79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92]);
 
 	for(var i=0; i<ANIM_MAX; i++)
-{
-	this.sprite.setAnimationOffset(i, -55, -87);
-}
-	
-	
-	this.position = new Vector2(10);
-	this.position.set( 1*35, 7*35 );
+	{
+		this.sprite.setAnimationOffset(i, -55, -87);
+	}
+
+	this.position = new Vector2();
+	this.position.set(1*35, 12*35);
 
 	this.width = 159;
 	this.height = 163;
-	
-	
+
 	this.velocity = new Vector2();
-	
+
 	this.falling = true;
 	this.jumping = false;
 
 	this.isDead = false;
-	
+
 	this.direction = RIGHT;
 
 	this.cooldownTimer = 0;
-	
-
 };
 
-
-Player.prototype.update = function(deltaTime)
+Player.prototype.update = function(deltaTime, moveRight, BULLET_SPEED)
 {
-
-this.sprite.update(deltaTime);
+	this.sprite.update(deltaTime);
 
 	var left = false;
- 	var right = false;
- 	var jump = false;
- 	var up = false;
+	var right = false;
+	var jump = false;
+	var up = false;
 	var down = false;
+	var shoot = false;
 
- 
- // check keypress events
- //LEFT
-	 	if(keyboard.isKeyDown(keyboard.KEY_LEFT) == true) {
-                left = true;
-                this.direction = LEFT;
-                if(this.sprite.currentAnimation != ANIM_WALK_LEFT)
-                        this.sprite.setAnimation(ANIM_WALK_LEFT);
-                    this.x -= PLAYER_SPEED * deltaTime;
-        }
-       //RIGHT
-        else if(keyboard.isKeyDown(keyboard.KEY_RIGHT) == true) {
-        right = true;
-        this.direction = RIGHT;
-        if(this.sprite.currentAnimation != ANIM_WALK_RIGHT)
-                this.sprite.setAnimation(ANIM_WALK_RIGHT);
-            this.x += PLAYER_SPEED * deltaTime;
-        }
-       
-        else {
-                if(this.jumping == false && this.falling == false)
-                {
-                        if(this.direction == LEFT)
-                        {
-                                if(this.sprite.currentAnimation != ANIM_IDLE_LEFT)
-                                this.sprite.setAnimation(ANIM_IDLE_LEFT);
-                        }
-                        else
-                        {
-                                if(this.sprite.currentAnimation != ANIM_IDLE_RIGHT)
-                                this.sprite.setAnimation(ANIM_IDLE_RIGHT);
-                        }
-                }
-        }
-        if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
+	//check keypress events
+	//LEFT
+	if(keyboard.isKeyDown(keyboard.KEY_LEFT) == true)
+	{
+		this.x -= PLAYER_SPEED * deltaTime;
+		left = true;
+		this.direction = LEFT;
+		if(this.sprite.currentAnimation != ANIM_WALK_LEFT)
+			this.sprite.setAnimation(ANIM_WALK_LEFT);
+	}
+	//RIGHT
+	else if(keyboard.isKeyDown(keyboard.KEY_RIGHT) == true)
+	{
+		this.x += PLAYER_SPEED * deltaTime;
+		right = true;
+		this.direction = RIGHT;
+		if(this.sprite.currentAnimation != ANIM_WALK_RIGHT)
+			this.sprite.setAnimation(ANIM_WALK_RIGHT);
+	}
+	else{
+		if(this.jumping == false && this.falling == false)
+		{
+			if(this.direction == LEFT)
+			{
+				if(this.sprite.currentAnimation != ANIM_IDLE_LEFT)
+					this.sprite.setAnimation(ANIM_IDLE_LEFT);
+			}
+			else
+			{
+				if(this.sprite.currentAnimation != ANIM_IDLE_RIGHT)
+					this.sprite.setAnimation(ANIM_IDLE_RIGHT);
+			}
+		}
+	}
+	if(keyboard.isKeyDown(keyboard.KEY_UP)== true)
 		{
 			jump = true;
 		}
@@ -137,43 +133,42 @@ this.sprite.update(deltaTime);
 		this.cooldownTimer -= deltaTime;
 	}
 
-	cooldownTimer = 0.5;
-	var bulletTimer = 0;
-	
 	//SHOOTING
 	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true && this.cooldownTimer <= 0)
-                {
-                        sfxFire.play();
-                        this.cooldownTimer = 0.3;
- 
-                                if(this.direction == LEFT)
-                                {
-                                        if(this.sprite.currentAnimation != ANIM_SHOOT_LEFT)
-                                        this.sprite.setAnimation(ANIM_SHOOT_LEFT);
-                                }
-                                else
-                                {
-                                        if(this.sprite.currentAnimation != ANIM_SHOOT_RIGHT)
-                                        this.sprite.setAnimation(ANIM_SHOOT_RIGHT);
-                                }
-                       
-                        //shoot a bullet
-                        var tempBullet =  new Bullet(this.position.x, this.position.y);
-                        this.moveRight = right;
-                if(this.right == true)
-                        {
-                                this.velocity.set(-MAXDX *2, 0);
-                        }
-                        else
-                        {
-                                this.velocity.set(MAXDX *0, 0);
-                        }
-                this.cooldownTimer = 0.5;
-                bullets.push(tempBullet);
- 
-                }
+	{
+		sfxFire.play();
+		this.cooldownTimer = 0.3;
 
+		var	tempBullet = new Bullet((this.position.x), this.position.y);
+		if(this.direction == LEFT)
+		{
+			left = true;
+			if(this.sprite.currentAnimation != ANIM_SHOOT_LEFT)
+				this.sprite.setAnimation(ANIM_SHOOT_LEFT);
+		}
+		else
+		{
+			right = true;
+			if(this.sprite.currentAnimation != ANIM_SHOOT_RIGHT)
+				this.sprite.setAnimation(ANIM_SHOOT_RIGHT);
+		}
 
+		if(right == true)
+		{
+			tempBullet.velocity.x = 400; //set direction for bullet
+			tempBullet.position.x += 80; //bullet position
+		}
+		else
+		{
+			tempBullet.velocity.x = -400; //set direction for bullet
+			tempBullet.position.x -= 50; //bullet position
+		}
+									
+		cooldownTimer = 0.5;			//set bullet timer to 0.5 seconds
+		bullets.push(tempBullet);		//add bullet to bullets array
+	}
+
+	//jittering
 	var wasleft = this.velocity.x < 0;
 	var wasright = this.velocity.x > 0;
 	var falling = this.falling;
@@ -228,7 +223,7 @@ this.sprite.update(deltaTime);
 	var cellright = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty);
 	var celldown = cellAtTileCoord(LAYER_PLATFORMS, tx, ty + 1);
 	var celldiag = cellAtTileCoord(LAYER_PLATFORMS, tx + 1, ty + 1);
-	
+
 	//if the player has vertical velocity, then check to see if they have hit
 	//a platform below or above, in which case, stop their vertical velocity, 
 	//and clamp their y positon:
@@ -275,7 +270,6 @@ this.sprite.update(deltaTime);
 			}
 		}
 	}
-	
 	//stop player leaving screen left & right
 	//player go right - this doesnt work
 	if((this.position.x - worldOffsetX) > (SCREEN_WIDTH - this.position.width) + 45) /*+45 b.cause ship wasn't hitting edge of screen - stopped early*/
@@ -292,8 +286,8 @@ this.sprite.update(deltaTime);
 	{
 		gameState = STATE_GAMEWIN;
 	}
-      
-    //RUNJUMPSTATE
+
+	/*//RUNJUMPSTATE
 	//mostly stays the same, but we add some new logic
 	//at the end of the function
 	if(right == false && left == false && this.falling == false)
@@ -326,7 +320,6 @@ this.sprite.update(deltaTime);
 			}
 		}
 	}
-
 	switch(gameState)
 	{
 		case STATE_RUNJUMP:
@@ -336,10 +329,7 @@ this.sprite.update(deltaTime);
 			player.gameStateClimb(deltaTime, left);
 		break;
 	}
-}
-	
-		
-
+}	
 Player.prototype.gameStateRunJump = function(deltaTime, left)
 {
 	if(this.falling == false)
@@ -350,27 +340,34 @@ Player.prototype.gameStateRunJump = function(deltaTime, left)
 		}
 	}
 }
-
 Player.prototype.gameStateClimb = function(deltaTime, left)
 {
-	/*if(this.falling == false && this.jumping == false && left == false && right == false)
+	var wasmoveup = false;
+	var wasmovedown = false;
+	if(keyboard.isKeyDown(keyboard.KEY_UP) == true)
 	{
-		if(keyboard.isKeyDown(keyboard.KEY_UP) == true)
-		{
-			up = true;
-			if(this.sprite.currentAnimation != ANIM_CLIMB)
-				this.sprite.setAnimation(ANIM_CLIMB);
-			{
-				this.velocity.y = 0;
-			}
-		}
+		climb.up = true;
+		if(this.sprite.currentAnimation != ANIM_CLIMB)
+			this.sprite.setAnimation(ANIM_CLIMB);
+	}
+	if(keyboard.isKeyDown(keyboard.KEY_DOWN)== true)
+	{
+		climb.down = true;
+		if(this.sprite.currentAnimation != ANIM_CLIMB)
+			this.sprite.setAnimation(ANIM_CLIMB);
+	}
+	if(this.velocity.y > 0)
+	{
+		wasmoveup = true;
+	}
+	if(this.velocity < 0)
+	{
+		wasmovedown = true;
 	}*/
+	
 }
 
 Player.prototype.draw = function()
 {
-	//context.drawImage(this.image, this.position.x - worldOffsetX, this.position.y);
 	this.sprite.draw(context, this.position.x - worldOffsetX, this.position.y);
 }
-
-

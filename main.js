@@ -62,8 +62,6 @@ var lives = 3;
 var lifeBar = document.createElement("img");
 	lifeBar.src = "pill.png";
 
-var health = document.createElement("img");
-	health.src = "pill.png";
 
 
 //set tile
@@ -87,7 +85,7 @@ var LAYER_BACKGROUND = 0;
 var LAYER_PLATFORMS = 1; 
 var LAYER_LADDERS = 2; 
 
-var LAYER_COUNT = 3;
+var LAYER_COUNT = 4;
 
 var MAP = {tw:60, th:15};
 var TILESET_TILE = TILE * 2;
@@ -96,13 +94,12 @@ var TILESET_SPACING = 2;
 var TILESET_COUNT_X = 14;
 var TILESET_COUNT_Y = 14;
 
-//enemy stuff
+//ENEMY
 var ENEMY_MAXDX = METER * 5;
 var ENEMY_ACCEL = ENEMY_MAXDX * 2;
 var enemies = [];
-var LAYER_OBJECT_ENEMIES = 3; 
-var LAYER_OBJECT_TRIGGERS = 4; 
-var LAYER_OBJECT_TRIGGERSHEALTH = 5;
+var LAYER_OBJECT_ENEMIES = 4; 
+var LAYER_OBJECT_TRIGGERS = 3; 
 
 var splashTimer = 3
 function runSplash(deltaTime)
@@ -307,7 +304,7 @@ function initialize()
 	{
 		urls: ["fireEffect.ogg"],
 		buffer: true,
-		volume: 0,
+		volume: 1,
 		onend: function() 
 		{
 			isSfxPlaying = false;
@@ -329,6 +326,9 @@ function intersects (x1, y1, w1, h1, x2, y2, w2, h2)
 
 function runGame(deltaTime)
 {
+	var gamescreen = document.createElement("img");
+	gamescreen.src = "background.png";
+	context.drawImage(gamescreen, 0, 0)
 	//UPDATE
 	player.update(deltaTime);
 
@@ -430,7 +430,7 @@ var endTimer = 5
 function runGameOver(deltaTime, x, y)
 {
 	var gamestart = document.createElement("img");
-	gamestart.src = "background.png";
+	gamestart.src = "gameover.png";
 	context.drawImage(gamestart, 0, 0);
 
 	endTimer -= deltaTime
@@ -451,7 +451,7 @@ function runGameWin(deltaTime, x, y)
 	endTimer -= deltaTime
 		
 	var gamestart = document.createElement("img");
-	gamestart.src = "background.png";
+	gamestart.src = "gameover.png";
 	context.drawImage(gamestart, 0, 0);
 
 	if(endTimer <= 0)
